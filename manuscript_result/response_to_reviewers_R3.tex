@@ -1,0 +1,336 @@
+%% ============================================================================
+%% Response to Reviewers, third revision (R3)
+%%
+%% Every comment carries an identifier (R5C1 to R5C12 for Reviewer 5 and
+%% R7C1 to R7C7 for Reviewer 7). The same identifier labels each change in
+%% manuscript_R3_tracked.tex, and the page lists in this letter are read from
+%% the auxiliary file of that tracked manuscript, so they always point to the
+%% pages on which the change for that comment appears.
+%%
+%% Compile in one folder:
+%%   pdflatex manuscript_R3_tracked ; bibtex manuscript_R3_tracked ;
+%%   pdflatex manuscript_R3_tracked ; pdflatex manuscript_R3_tracked ;
+%%   pdflatex response_to_reviewers_R3 ; pdflatex response_to_reviewers_R3
+%% ============================================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{mathptmx}
+\usepackage[table]{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,array}
+\usepackage{enumitem}
+\usepackage{refcount}
+\usepackage{xr}
+%% The auxiliary file of the tracked manuscript is read from this folder or from manuscript/.
+\IfFileExists{manuscript_R3_tracked.aux}{\externaldocument[M-]{manuscript_R3_tracked}}{\externaldocument[M-]{manuscript/manuscript_R3_tracked}}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+
+%% Colours shared with the tracked manuscript
+\definecolor{rvFive}{HTML}{1F4FBF}
+\definecolor{rvSeven}{HTML}{B3261E}
+\definecolor{rvBoth}{HTML}{7A2E8E}
+\definecolor{rvEdit}{HTML}{1A7D3B}
+\newcommand{\idfive}[1]{\textcolor{rvFive}{\textbf{#1}}}
+\newcommand{\idseven}[1]{\textcolor{rvSeven}{\textbf{#1}}}
+\newcommand{\idboth}[1]{\textcolor{rvBoth}{\textbf{#1}}}
+\newcommand{\idedit}[1]{\textcolor{rvEdit}{\textbf{#1}}}
+
+%% Locations in the tracked manuscript
+\newcommand{\msec}[1]{Section~\ref{M-#1}, p.~\pageref{M-#1}}
+\newcommand{\mtab}[1]{Table~\ref{M-#1}, p.~\pageref{M-#1}}
+\newcommand{\mfig}[1]{Figure~\ref{M-#1}, p.~\pageref{M-#1}}
+\newcommand{\meq}[1]{Equation~(\ref{M-#1})}
+
+%% Pages of the tracked manuscript on which a comment is addressed
+\ExplSyntaxOn
+\seq_new:N \l__rv_pages_seq
+\tl_new:N \l__rv_page_tl
+\NewDocumentCommand{\rvpages}{O{}m}{
+  \seq_clear:N \l__rv_pages_seq
+  \int_step_inline:nnn {1} {999}
+    {
+      \cs_if_exist:cT { r@#1rv:#2:##1 }
+        {
+          \tl_set:Nx \l__rv_page_tl { \getpagerefnumber{#1rv:#2:##1} }
+          \seq_if_in:NVF \l__rv_pages_seq \l__rv_page_tl
+            { \seq_put_right:NV \l__rv_pages_seq \l__rv_page_tl }
+        }
+    }
+  \seq_sort:Nn \l__rv_pages_seq
+    { \int_compare:nNnTF {##1} > {##2} { \sort_return_swapped: } { \sort_return_same: } }
+  \seq_if_empty:NTF \l__rv_pages_seq
+    { (compile~the~tracked~manuscript~first) }
+    {
+      \int_compare:nNnTF { \seq_count:N \l__rv_pages_seq } = {1} { p.\nobreakspace } { pp.\nobreakspace }
+      \seq_use:Nnnn \l__rv_pages_seq { ~and~ } { ,~ } { ~and~ }
+    }
+}
+\ExplSyntaxOff
+
+%% Comment layout
+\newcommand{\comment}[3]{\subsection*{\textcolor{#1}{[#2]}\enspace #3}}
+\newenvironment{reviewercomment}{\par\noindent\textbf{Reviewer comment.}\itshape\ }{\par}
+\newcommand{\response}{\par\noindent\textbf{Response.}\ }
+\newcommand{\changes}{\par\noindent\textbf{Changes in the manuscript.}\ }
+\newcommand{\where}[1]{\par\noindent\textbf{Pages in the tracked manuscript.}\ \rvpages[M-]{#1}.}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Response to Reviewers}\\[0.6em]
+{\large Manuscript submitted to \textit{Information Processing and Management}}\\[0.6em]
+{\normalsize Revised title: \textit{An Automated Confidence-Aware Framework for Sarcasm Detection in App Reviews Using Inference-Optimized Transformer Language Models}}\\[0.3em]
+{\normalsize Previous title: \textit{An Agentic Framework For Sarcasm Detection in App Reviews Using Inference-Optimized Transformer Language Model}}
+\end{center}
+
+\section*{Note to the Editor and Reviewers}
+
+We thank the Editor, Reviewer 5 and Reviewer 7 for their careful reading of the second revision. The two reports agree on the issues that remained, and we have treated each of them as something to be settled with evidence in the manuscript rather than recorded as an open item. Reviewer 7 recommended rejection on the grounds that the label mapping was unresolved, that duplicated reviews crossed the partitions and the experiments had not been repeated after deduplication, that the confidence-based routing had not been validated, that the FlashAttention conclusions were not consistent with the memory results, that the word ``agentic'' overstated the system, and that the near-perfect binary scores had not been checked against dataset-specific shortcuts, and we respectfully ask the Reviewer to consider the revised manuscript, in which each of these six points is now addressed directly.
+
+The principal changes are as follows. The title, keywords and running header no longer use the word ``agentic'', and the system is described consistently as an automated, confidence-aware pipeline. We resolved the naming of the Self-Deprecation and Passive-Aggression categories against the released data files, which store the categories as text and therefore leave no mapping step at which a swap could have occurred. We audited both released files for repeated and conflicting annotations, found that 230 texts in the sarcasm-type file carry two different labels, deduplicated both datasets before partitioning, and repeated all thirty encoder runs under this new protocol (Protocol B), while keeping the results on the released benchmark (Protocol A) for continuity. We applied the Holm correction to the sixty paired tests, added lexical and surface-feature baselines, which show openly that the binary class boundary of this benchmark is largely lexical, and validated the confidence-based routing through calibration analysis, a threshold sweep and an independent second-opinion stage. Finally, we corrected every sentence that generalized the memory benefit of FlashAttention beyond the FlashAttention-2 library, and we completed a copy-editing pass that also corrected several statements that did not match the tables, the section and table references, the figures and the reference list.
+
+\paragraph{How the changes are tracked.} Each comment in this letter carries an identifier, so that R5C4 denotes Comment~4 of Reviewer~5 and R7C3 denotes Comment~3 of Reviewer~7. The same identifier is printed as a superscript tag beside every corresponding change in the tracked manuscript (\texttt{manuscript\_R3\_tracked.pdf}), in which \textcolor{rvFive}{\textbf{blue}} marks changes made for Reviewer~5, \textcolor{rvSeven}{\textbf{red}} marks changes made for Reviewer~7, \textcolor{rvBoth}{\textbf{purple}} marks changes that answer a concern raised by both reviewers and therefore carry two identifiers, and \textcolor{rvEdit}{\textbf{green}} without a tag marks copy-editing recorded under R7C7. Deleted text is struck through in the colour of the comment that motivated its removal, so that the reader can compare the previous and the revised wording in place. All section, table, figure, equation and page references in this letter are read from the compiled tracked manuscript, and the page lists below are generated from the tags themselves, so they name every page on which a change for that comment appears. The same index is reproduced on the last page of the tracked manuscript, and the clean manuscript (\texttt{manuscript\_R3\_clean.pdf}) is built from the same source with the mark-up switched off.
+
+\subsection*{Tracking matrix}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{1.25cm}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{4.8cm}>{\raggedright\arraybackslash}p{3.6cm}}
+\toprule
+ID & Concern & Main change & Pages \\
+\midrule
+\endfirsthead
+\toprule
+ID & Concern & Main change & Pages \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\idfive{R5C1} & ``Agentic'' in the title is stronger than the design & New title and removal of the term & \rvpages[M-]{R5C1} \\
+\idfive{R5C2} & Grammar of the Mistral sentence in the Abstract & Sentence rewritten as proposed & \rvpages[M-]{R5C2} \\
+\idfive{R5C3} & Pipeline description repeated in the Introduction & Duplicated sentences deleted & \rvpages[M-]{R5C3} \\
+\idfive{R5C4} & Contextual component $C_r$ is never used & $C_r$ removed from the formulation & \rvpages[M-]{R5C4} \\
+\idfive{R5C5} & Output ``forwarded to the efficiency layer'' & Sentence, overview and Figure~1 corrected & \rvpages[M-]{R5C5} \\
+\idfive{R5C6} & $\Phi_{\mathrm{flash}}$ placed after $\Phi_{\mathrm{cls}}$ in Equation~(22) & FlashAttention moved inside the encoder & \rvpages[M-]{R5C6} \\
+\idfive{R5C7} & ``Verification model'' in Section~4 & Secondary processing and routing terms & \rvpages[M-]{R5C7} \\
+\idboth{R5C8} & Self-Deprecation and Passive-Aggression mapping & Names resolved against the released files (with R7C1) & \rvpages[M-]{R5C8} \\
+\idboth{R5C9} & Scores after removing overlapping test items & Audit, deduplicated Protocol B and full rerun (with R7C2) & \rvpages[M-]{R5C9} \\
+\idfive{R5C10} & No correction for sixty paired tests & Holm correction for both protocols & \rvpages[M-]{R5C10} \\
+\idfive{R5C11} & Section, table and figure references & All references generated automatically & \rvpages[M-]{R5C11} \\
+\idfive{R5C12} & Duplicate references & Duplicates merged and citations corrected & \rvpages[M-]{R5C12} \\
+\midrule
+\idboth{R7C1} & Label mapping unresolved & Names resolved against the released files (with R5C8) & \rvpages[M-]{R7C1} \\
+\idboth{R7C2} & Duplicates across partitions and no rerun & Deduplication before splitting and all thirty runs repeated (with R5C9) & \rvpages[M-]{R7C2} \\
+\idseven{R7C3} & Routing not validated & Calibration, threshold sweep and second opinion & \rvpages[M-]{R7C3} \\
+\idseven{R7C4} & FlashAttention memory claims inconsistent & Memory claims restricted to the FlashAttention-2 library & \rvpages[M-]{R7C4} \\
+\idboth{R7C5} & ``Agentic framework'' overstated & Framing removed throughout (with R5C1) & \rvpages[M-]{R7C5} \\
+\idseven{R7C6} & Shortcuts behind near-perfect binary scores & Lexical and surface-feature baselines & \rvpages[M-]{R7C6} \\
+\idedit{R7C7} & Grammar, repetition, terminology and references & Copy-editing checked against the tables & \rvpages[M-]{R7C7} \\
+\end{longtable}
+
+%% ============================================================================
+\section*{Reviewer \#5}
+
+\comment{rvFive}{R5C1}{The word ``Agentic'' in the title}
+\begin{reviewercomment}
+The word ``Agentic'' in the title is still stronger than the actual system design. The manuscript states: ``It does not perform autonomous planning, goal generation, tool selection, strategy selection, or self-reflective reasoning.'' I suggest changing ``Agentic Framework'' to ``Automated Confidence-Aware Framework'' or another more precise term. If the authors keep ``agentic'' in the title, they should explain the term very clearly.
+\end{reviewercomment}
+\response We agree with the reviewer and have adopted the suggested wording, so the new title is \textit{An Automated Confidence-Aware Framework for Sarcasm Detection in App Reviews Using Inference-Optimized Transformer Language Models}. Since the system executes a fixed sequence of operations with a single confidence-conditioned branch, the word ``agentic'' no longer describes it anywhere in the manuscript, and it now appears only where we discuss the literature on agentic systems in order to position our work against it. Reviewer 7 raised the same concern (R7C5), and the full list of places where the terminology was changed is given in our response to that comment, which is why both identifiers are attached to these changes and the corresponding text is printed in purple.
+
+\where{R5C1}
+
+\comment{rvFive}{R5C2}{Grammar of the Mistral sentence in the Abstract}
+\begin{reviewercomment}
+In the Abstract, the sentence ``Then evaluated zero-shot Mistral (Mistral-7B-Instruct-v0.3) baseline performs substantially below\ldots'' is not correct English. Please change it to: ``The evaluated zero-shot Mistral-7B-Instruct-v0.3 baseline performs substantially below the fine-tuned encoder models on both tasks.''
+\end{reviewercomment}
+\response We thank the reviewer for the correction, and the sentence now reads exactly as proposed. While revising the Abstract we also removed a stray fragment at its end (``for app review analytics.''), which had been left behind by an earlier edit, and the new results of this round that were added to the Abstract are tagged with the identifiers of the comments that required them.
+\changes Abstract.
+\where{R5C2}
+
+\comment{rvFive}{R5C3}{Repeated pipeline description in the Introduction}
+\begin{reviewercomment}
+In the Introduction, the pipeline description is repeated. The manuscript first says: ``The pipeline proposed in this study executes a predefined sequence of six operations\ldots'' It then says: ``The pipeline executes a predefined sequence of six operations\ldots'' Please delete one of these sentences.
+\end{reviewercomment}
+\response The duplicated sentence has been deleted, together with the sentence that repeated its conclusion (``Its automation is therefore confined to orchestration and confidence-conditioned routing''), so the paragraph now describes the six operations once, states that the sequence contains a single conditional branch, lists what the system does not do, and explains why we call it an automated, confidence-aware pipeline. In the same part of the Introduction we also deleted a summary sentence after the list of contributions that repeated the paragraph before it, and this deletion is marked under R7C7.
+
+\where{R5C3}
+
+\comment{rvFive}{R5C4}{The contextual component $C_r$ in Section 3.2}
+\begin{reviewercomment}
+Section 3.2 defines a review as $r = \langle T_r, C_r\rangle$ and says that $C_r$ may contain ratings or metadata. However, the model mapping later uses only $T_r$. Please state whether ratings or metadata are actually used. If they are not used, please remove $C_r$ from the formulation.
+\end{reviewercomment}
+\response Ratings and metadata are not used, because the released benchmark provides only the review text and the labels, so no model in the study could have used anything else. We have therefore removed $C_r$ from the formulation and stated this explicitly, and the problem formulation now represents each review by its text alone, defines the two label spaces $L_{\mathrm{bin}}$ and $L_{\mathrm{type}}$ separately, and makes clear that both tasks share one formulation but use different datasets. The input of Algorithm~1, which previously read ``Raw reviews $R=\{r_1,\ldots,r_n\}$'', was changed in the same way.
+
+\where{R5C4}
+
+\comment{rvFive}{R5C5}{The sentence about forwarding to the efficiency optimization layer}
+\begin{reviewercomment}
+In Section 3.5, the sentence ``The classification output produced in this stage is then forwarded to the efficiency optimization layer'' is not technically correct. FlashAttention works inside the transformer attention computation. Please revise this sentence.
+\end{reviewercomment}
+\response We agree that the sentence was incorrect, and it has been replaced by a statement that the predicted distribution of the classifier is passed to the confidence-based routing stage, while FlashAttention does not act on this output and only changes how the attention of the encoder is computed. We also revised the Overview in Section~3.1 and the caption of Figure~1, which had suggested the same wrong order, changed the label of the final box of Figure~1 from ``Agentic AI Automations'' to ``Automated Workflow'', and corrected the closing paragraph of the deployment example in Section~4, which had listed FlashAttention as a stage of its own.
+
+\where{R5C5}
+
+\comment{rvFive}{R5C6}{Position of $\Phi_{\mathrm{flash}}$ in Equation (22)}
+\begin{reviewercomment}
+Equation (22) still places $\Phi_{\mathrm{flash}}$ after $\Phi_{\mathrm{cls}}$. This makes FlashAttention look like a stage after classification. This conflicts with Section 3.6. Please treat FlashAttention as part of the encoder rather than as a separate stage after classification.
+\end{reviewercomment}
+\response We have rewritten the composition so that FlashAttention is a property of the encoder, and the end-to-end process is now $l_{\mathrm{final}} = \Phi_{\mathrm{route}} \circ \Phi_{\mathrm{cls}} \circ \Phi_{\mathrm{enc}}^{(a)} \circ \Phi_{\mathrm{prep}}(T_r)$, where the superscript $a \in \{\text{eager}, \text{FlashAttention}\}$ denotes the implementation used by every attention layer of the encoder and the definition of $\Phi_{\mathrm{enc}}^{(a)}$ refers to the online-softmax equations of Section~3.6. We added a sentence stating that the two choices of $a$ compute the same function up to floating-point rounding, so that they affect the cost of the pipeline and not its predictions, and the operator previously called $\Phi_{\mathrm{agent}}$ is now $\Phi_{\mathrm{route}}$. The previous form of the equation is retained as a struck note in the tracked manuscript for comparison. Algorithm~1 was changed in the same way, since its training step read ``Train $m$ using FlashAttention'', which also contradicted the fact that the main grid was trained with eager attention, and the step now fine-tunes $m$ with an attention implementation $a$ that is given as an explicit input.
+
+\where{R5C6}
+
+\comment{rvFive}{R5C7}{``Verification model'' in Section 4}
+\begin{reviewercomment}
+In Section 4, the phrase ``the verification model (Equation (20)) is triggered'' should be changed. The same model is used again, so this is not a true verifier. Please use ``secondary processing stage'' or ``confidence-based routing stage'' instead.
+\end{reviewercomment}
+\response Step 6 of the deployment example now states that if $c < \tau$ the review is passed to the secondary processing stage of \meq{eq:secondary} and flagged for review, and that otherwise the prediction is accepted. We searched the whole manuscript for the remaining uses of the word and corrected them as well, so the notation $l_{\mathrm{verify}}$ in Equations~(\ref{M-eq:secondary}) and~(\ref{M-eq:final}) is now $l_{\mathrm{route}}$, and the sentence describing the orchestration as separating ``prediction, verification, storage, and visualization'' now refers to routing. The word ``verification'' remains only where it refers to the runtime verification of the FlashAttention backend, which is a genuine check, and where the manuscript explains why the secondary stage is not a verifier.
+
+\where{R5C7}
+
+\comment{rvBoth}{R5C8}{Label mapping of Self-Deprecation and Passive-Aggression}
+\begin{reviewercomment}
+The label mapping issue should be resolved. The manuscript states that the counts for Self-Deprecation and Passive-Aggression do not match the source paper. This affects the meaning of the per-class results. Please check the original labels and correct the class names before publication.
+\end{reviewercomment}
+\response We have resolved this issue against the released data, and the result is that the class names used in the manuscript are correct and need no change, a conclusion supported by three independent pieces of evidence.
+
+First, both released benchmark files store the categories as text strings rather than integer codes, and our experiments read these strings directly, so there is no mapping step anywhere in our pipeline at which the two names could have been exchanged. In the sarcasm-type file, the category with 439 reviews carries the string \textit{Self-Deprecation} and the category with 263 reviews carries the string \textit{Passive-Aggression}.
+
+Second, the binary file contains its own sarcasm-type column, which was annotated independently of the sarcasm-type file, and when the two files are matched on review text, 427 of the 439 reviews of the first category are also named \textit{Self-Deprecation} in that column, so two separately stored annotations agree on the name.
+
+Third, the content of the two categories agrees with the released names. We read a random sample of 30 reviews from each category and found that the reviews labelled \textit{Passive-Aggression} are veiled complaints addressed to the developer, such as ironic praise for the effort spent on fake five-star reviews or polite requests to reduce advertisements, with 18.3\% of them addressing the developer or requesting a fix, which is the highest share of any category. The reviews labelled \textit{Self-Deprecation} consist mainly of exaggerated mock condemnation that echoes the self-deprecating premise of applications such as One Star App, and 85.4\% of them contain the word ``worst'', so exchanging the names would assign developer-directed complaints to self-deprecation, which neither annotation supports.
+
+We therefore keep the names of the released benchmark and attribute the discrepancy to the count table of the source publication. The paragraph of the previous version that reported the open mapping question is struck through, and a new paragraph explains the resolution and tells readers how to compare our per-class results with that publication. While checking the counts we also found that the minority-class percentages had been computed against the wrong dataset and had paired the two disputed names with each other's shares, and the corrected percentages are now given relative to the sarcasm-type dataset. As a matter of construct validity, we also note that in this benchmark the Self-Deprecation category denotes mock condemnation by or about an application rather than the narrower linguistic sense of a speaker mocking themselves. The sampled reviews, the cross-tabulation of the two annotations and the cue counts are provided as supplementary material, and because Reviewer 7 raised the same issue (R7C1), these changes carry both identifiers.
+
+\where{R5C8}
+
+\comment{rvBoth}{R5C9}{Test scores after removing the overlapping test items}
+\begin{reviewercomment}
+The paper reports exact duplicate texts across training and test partitions. Please report the test scores after removing the overlapping test items. This check can likely be done from the stored predictions, so retraining may not be needed.
+\end{reviewercomment}
+\response We went one step further than the reviewer asked, because Reviewer 7 requested that the dataset be deduplicated before splitting and that the main experiments be repeated (R7C2), and because our audit showed that the duplicates are more complicated than exact copies.
+
+We first repeated the audit with a stricter normalized matching, which also recognizes copies that differ only in letter case, spacing or mis-encoded characters. In the binary file, 73 rows repeat an earlier review, always with the same label, whereas in the sarcasm-type file 289 rows repeat an earlier review and 230 texts covering 461 rows appear with two or more different sarcasm types, the most frequent pairs being Humor with Self-Deprecation, Irony with Self-Deprecation, and Humor with Irony. These texts are in effect multi-label annotations stored as separate single-label rows. The audit also showed that the sarcasm-type file is not a subset of the sarcastic reviews of the binary file, since 3,101 of its reviews are sarcastic in the binary file, 253 are labelled non-sarcastic there and 106 have no counterpart, and the description of the dataset has been corrected accordingly.
+
+The audit also clarified the direction of the possible bias in the released-benchmark partitions. In the binary task, between 13 and 14 test reviews per seed also occur in training with the same label, which could inflate the scores, but they amount to less than 1\% of the 1,500 test reviews. In the sarcasm-type task, between 60 and 66 test reviews per seed occur in training, but 45 to 52 of them occur there only under a different label, so they cannot inflate the scores and, if anything, lower them.
+
+To remove both effects we introduced Protocol B, in which every text that carries conflicting labels is removed, every repeated text with a consistent label is kept once, and only then are the stratified partitions drawn with the same seeds, so that no text is shared between any two partitions. We retrained all five encoders on both tasks with the same hyperparameters and seeds, on an NVIDIA A100 GPU with a training script written for this revision. On the binary task the mean Macro F1-score increased for every architecture, by between 0.0024 and 0.0098 relative to the released-benchmark protocol, with a best mean Macro F1-score of 0.9975 for BERT, so removing the overlapping reviews lowered no score and they had not inflated the original results. On the sarcasm-type task the mean Macro F1-score increased for every architecture, by between 0.1036 and 0.1679, with a best mean Macro F1-score of 0.9364 for DistilBERT, and TinyBERT remains the weakest architecture on both tasks. The lexical baseline, computed in exactly the same way under both protocols, rises from 0.7425 to 0.8390 on the sarcasm-type task, a gain close to that of the encoders, which shows that most of the change on that task comes from removing the reviews that carry two labels rather than from removing duplicated training evidence or from the change of implementation, and the manuscript states this interpretation together with the implementation difference. Both protocols are reported, and the results on the released benchmark are kept as the main reference so that they remain comparable with prior work on this benchmark.
+
+\where{R5C9}
+
+\comment{rvFive}{R5C10}{Multiple-comparison correction}
+\begin{reviewercomment}
+The manuscript reports 60 paired tests but applies no multiple-comparison correction. Please consider a simple correction such as Holm correction. If no correction is used, please call these tests exploratory.
+\end{reviewercomment}
+\response We applied the Holm correction to the McNemar $p$-values, treating all sixty comparisons as a single family, and we report the result next to the uncorrected counts in the paired-test table. The correction sharpens the conclusions rather than changing them. All 24 comparisons that involve TinyBERT are significant before correction, and 18 remain significant after it, including all twelve comparisons with BERT and with DistilBERT on both tasks, while the comparisons with RoBERTa and MiniLM remain significant at one or two seeds per task. Among BERT, RoBERTa, DistilBERT and MiniLM, 7 of the 36 comparisons are significant before correction and none remains significant after it, the smallest adjusted $p$-value being 0.17. The text now reports this precisely, and the claim about TinyBERT in the Abstract, the Key Findings, the Summary of Results and the Conclusion has been narrowed to what survives the correction. We also deleted the sentence of the Discussion stating that ``RoBERTa and BERT showed superior performance'', which the corrected analysis does not support.
+
+The same correction was applied to the sixty Protocol B tests, where 13 of the 24 TinyBERT comparisons remain significant (9 of 12 on the sarcasm-type task and 4 of 12 on the binary task, where every architecture scores above 0.987), and a single comparison among the other four architectures survives, namely RoBERTa against DistilBERT on the sarcasm-type task at seed 2024, with an adjusted $p$-value of 0.024. Because it occurs at one seed only, at which RoBERTa produced its weakest run, the manuscript reports it as a sign of the instability of RoBERTa rather than as a ranking of the architectures.
+
+While checking the table against the stored test output we also found two small inaccuracies, which we corrected. The caption described the third column as the mean absolute difference, whereas the values are the absolute value of the seed-averaged signed difference, and the text stated that DistilBERT and MiniLM reach significance at one seed on the binary task, whereas the stored output shows that this happens on the sarcasm-type task, so the caption and the text now match the table.
+
+\where{R5C10}
+
+\comment{rvFive}{R5C11}{Section, table and figure references}
+\begin{reviewercomment}
+There are small section-number problems. For example, the manuscript says ``Sections 6 and 6''. Please check all section, table, and figure references.
+\end{reviewercomment}
+\response We thank the reviewer for pointing this out, because the problem had a structural cause, namely that several references had been typed by hand and that the efficiency results were not numbered as a subsection of their own. Section~6 now has one subsection per research question, followed by the statistical validation, the efficiency results, the robustness analyses, the routing validation, the language model comparison, the comparison with prior work and the deployment discussion, and every cross-reference in the manuscript is generated automatically by LaTeX. Each hand-typed reference that was replaced is struck through and tagged R5C11 in the tracked manuscript, which is why this identifier appears on many pages. In the course of this check we also corrected the reference to ``Table 13'' in Section~2.6, which should have pointed to Table~1, added the missing Section~7 to the roadmap at the end of the Introduction, and aligned the wording of the research questions in Section~6 with those in Section~1.2, since the RQ3 box in Section~6 contained the garbled phrase ``to what extent does FlashAttention assess their suitability''.
+
+\where{R5C11}
+
+\comment{rvFive}{R5C12}{Duplicate references}
+\begin{reviewercomment}
+The reference list contains duplicate entries. For example, Dao et al. (2022a) and Dao et al. (2022b) appear to be the same paper. Devlin et al. (2019a) and Devlin et al. (2019b) also appear to be the same paper. Please remove duplicate references and update the in-text citations.
+\end{reviewercomment}
+\response We checked the whole reference list and merged every duplicate, which affected more entries than the two examples. The merged pairs are Dao et al. (2022a, 2022b); Devlin et al. (2019a, 2019b); Rajadesingan et al. (2015a, 2015b); Yao et al. (2022a, 2022b), now cited as the ICLR 2023 publication of ReAct; Schick et al. (2023a, 2023b); the two entries of Gonz\'alez-Ib\'a\~nez et al. (2011), which differed only in the spelling of the first author's name; and Dao (2023) and Dao (2024), which are the arXiv and ICLR versions of FlashAttention-2 and are now cited once as the ICLR 2024 paper. All in-text citations were updated, and because the merging changes many citation labels at once, for example from Devlin et al. (2019a) to Devlin et al. (2019), these label changes are not marked one by one in the tracked manuscript, which says so in its guide on the first page. We also removed the BERT paper from the deep learning row of Table~1, where it had been placed by mistake, corrected a citation to Linformer that had been attached to a sentence about the memory access of FlashAttention, and added three references required by the new analyses, namely Holm (1979) for the correction, Guo et al. (2017) for calibration and temperature scaling, and Geifman and El-Yaniv (2017) for selective classification.
+
+\where{R5C12}
+
+%% ============================================================================
+\section*{Reviewer \#7}
+
+We thank Reviewer 7 for a detailed and constructive report. Since the specific comments of the report correspond to the six major weaknesses, we answer each weakness in turn, with its specific comment, and then the comments on grammar and readability.
+
+\comment{rvBoth}{R7C1}{Label mapping between Self-Deprecation and Passive-Aggression}
+\begin{reviewercomment}
+The label mapping between Self-Deprecation and Passive-Aggression remains unresolved, directly affecting the interpretation of the fine-grained results. [Specific comments:] The authors should resolve the class-label mapping issue.
+\end{reviewercomment}
+\response The issue is now resolved, because both released files store the categories as text, so our experiments contain no mapping step at which the names could have been exchanged. An independently annotated sarcasm-type column in the binary file names 427 of the 439 reviews of the disputed category \textit{Self-Deprecation}, in agreement with the sarcasm-type file, and a reading of 30 randomly sampled reviews from each category, supported by simple cue counts, shows that the \textit{Passive-Aggression} reviews are veiled complaints directed at the developer whereas the \textit{Self-Deprecation} reviews are exaggerated mock condemnations, so exchanging the names would contradict the content. The discrepancy therefore lies in the count table of the source publication, and the per-class results of the manuscript are interpreted with the correct names. The full evidence is given in our response to R5C8, and the changes carry both identifiers.
+
+\where{R7C1}
+
+\comment{rvBoth}{R7C2}{Duplicate reviews and repetition of the experiments}
+\begin{reviewercomment}
+Exact duplicate reviews occur across training and test partitions, but the experiments were not repeated after deduplication, raising concerns about information leakage. [Specific comments:] \ldots deduplicate the dataset before splitting and repeat the main experiments.
+\end{reviewercomment}
+\response We did exactly what the reviewer requested. Both datasets were deduplicated before splitting under a stricter normalized matching, every text that carries conflicting labels was removed, and all thirty encoder runs were repeated with the same hyperparameters and seeds (Protocol B, executed on an NVIDIA A100-SXM4-40GB GPU with PyTorch 2.11.0 and Transformers 5.18.0). No text is shared between partitions under this protocol, so the Protocol B scores are free of leakage through repeated reviews, and the best mean Macro F1-score is 0.9975 on the binary task and 0.9364 on the sarcasm-type task. Every architecture scores higher than under the released-benchmark protocol, which shows that the repeated reviews had not inflated the original results, TinyBERT remains the weakest architecture on both tasks, and after Holm correction only one of the 36 comparisons among the four stronger architectures remains significant, at a single seed. The large gain on the sarcasm-type task is explained mainly by the removal of the 230 texts with conflicting labels, as the lexical baseline computed under both protocols shows. The audit also shows that, on the sarcasm-type task, most of the overlapping test reviews of the released partitions appeared in training only under a different label, which could lower but not inflate the scores, while on the binary task the same-label overlap amounted to less than 1\% of the test partition. Further detail is given in our response to R5C9.
+
+The FlashAttention comparisons were not repeated, because training time, latency and memory do not depend on whether a few reviews are repeated, and the predictive part of those comparisons is used only to show that the attention backend does not change the Macro F1-score within each protocol.
+
+\where{R7C2}
+
+\comment{rvSeven}{R7C3}{Validation of the confidence-aware pipeline}
+\begin{reviewercomment}
+The confidence-aware pipeline is insufficiently validated. Low-confidence samples are processed again by the same model, without calibration or threshold-sensitivity analysis. [Specific comments:] \ldots provide stronger validation of the confidence-routing mechanism.
+\end{reviewercomment}
+\response We agree that the previous version described the routing without testing it and recorded the threshold analysis as an open item, and both sentences that deferred this work are struck through in the tracked manuscript. We have now validated the mechanism on the Protocol B test partitions, using the model that Algorithm~1 would deploy for each task, namely BERT for the binary task and DistilBERT for the sarcasm-type task, and the new subsection reports three analyses whose outcome we give as it is, including the parts that limit the usefulness of the mechanism.
+
+The first analysis concerns calibration. The expected calibration error of the confidence score is 0.0019 on the binary task and 0.0216 on the sarcasm-type task, so the scores of the fine-tuned models are already well calibrated, and temperature scaling fitted on the validation partition does not improve them further (0.0033 and 0.0220), which is why the pipeline uses the uncalibrated scores, as the manuscript now states.
+
+The second analysis is a threshold sweep from 0.5 to 0.9, with the three test partitions pooled because only a few reviews fall below the threshold in any one seed, which reports for each threshold the number of routed reviews, the accuracy of accepted and routed predictions, and how many of the errors of the model fall in the routed set. On the sarcasm-type task the confidence score is informative, since at $\tau = 0.7$ 16 of 1,326 test reviews are routed and their accuracy is 0.6250, against 0.9649 for the accepted predictions, whereas on the binary task the model is almost never uncertain and routes only 4 of 4,467 test reviews, all of them correct. The sweep also shows the limit of the mechanism, which we now state in the manuscript: most errors are made with high confidence, so routing captures 6 of the 52 sarcasm-type errors at $\tau = 0.7$, 16 of 52 at $\tau = 0.9$, and at most 1 of the 10 binary errors. Confidence-based routing therefore surfaces a small set of uncertain reviews for human attention but is not a safeguard against most misclassifications, and the Discussion, the Threats to Validity and the Conclusion have been worded accordingly.
+
+The third analysis addresses the reviewer's point that the secondary stage re-applies the same model. We evaluated an independent second opinion, in which every routed review is relabelled by the averaged probabilities of the other fine-tuned encoders, excluding TinyBERT. On the binary task this changes nothing, because the routed reviews were already correct, while on the sarcasm-type task the accuracy on the routed reviews rises from 0.6250 to 0.6875, since across the three seeds the second opinion corrects 5 predictions and introduces 4 new errors, and the mean Macro F1-score changes from 0.9364 to 0.9391. The deployed configuration keeps the same-model stage for triage, as the manuscript states plainly, and this analysis quantifies the small additional benefit that an independent stage would bring.
+
+\where{R7C3}
+
+\comment{rvSeven}{R7C4}{Consistency of the FlashAttention conclusions on GPU memory}
+\begin{reviewercomment}
+The FlashAttention conclusions are not fully consistent with the reported results, particularly regarding GPU memory reduction. [Specific comments:] The FlashAttention claims should also be revised so that the summary and conclusion accurately reflect the differing memory results across the two experiments.
+\end{reviewercomment}
+\response The reviewer is right that Key Finding~3 had already limited the memory claim to the FlashAttention-2 library while several other passages still generalized it. We corrected each of them so that the manuscript states the same conclusion everywhere, namely that FlashAttention reduces training time and inference latency for every architecture on both tasks, and that it reduces peak training memory by 10.2\% to 18.1\% only with the FlashAttention-2 library, while memory is unchanged with the PyTorch scaled dot-product attention backend and increases for DistilBERT in that experiment. The corrected passages are the Summary of Results box, which had claimed that peak GPU memory falls ``consistently across architectures and tasks''; the Conclusion, which had claimed reductions in peak memory ``across all evaluated architectures and both tasks''; the Discussion, which had claimed that FlashAttention ``significantly reduces \ldots memory overhead''; the deployment subsection, which had credited FlashAttention with reductions in peak GPU memory for per-review processing; Section~2.5, which stated a general memory benefit without qualification; and Section~3.6, which promised memory results ``for both training and inference'' that the manuscript does not report and now refers to peak training memory only.
+
+We also removed an unsupported explanation from Key Finding~3, which attributed the larger gains of RoBERTa to ``the smallest batch size'' although Table~\ref{M-tab:hyper} lists the same batch size for all models, while the explanation of the small gains of TinyBERT, which follows from its shallow architecture, was kept.
+
+\where{R7C4}
+
+\comment{rvBoth}{R7C5}{The ``agentic framework'' framing}
+\begin{reviewercomment}
+The term ``agentic framework'' appears overstated because the system follows a predefined workflow and does not perform autonomous planning or goal generation. [Specific comments:] Finally, the ``agentic'' framing should be reconsidered to better match the actual functionality of the proposed pipeline.
+\end{reviewercomment}
+\response We agree, and the framing has been removed rather than qualified, so the title now uses ``Automated Confidence-Aware Framework'' and the system is described throughout as an automated, confidence-aware pipeline with a single confidence-conditioned branch. The previous response letter stated that this change had been made in the technical sections, but several instances remained in the manuscript, and we have now removed all of them. Specifically, ``Agentic AI'' was removed from the keywords; the running header ``Sarcasm Identification from App Reviews using an Agentic AI'' was replaced; the scoping paragraph of the Introduction now states that the work does not claim agentic behaviour; Section~2.4 no longer refers to ``an agentic pipeline'' for ``real-time'' analytics; the last paragraph of Section~2.6 states explicitly that the present work does not build an agentic system and cites that literature only for positioning, and its absolute claim that ``existing research has not explored'' such integration was softened; the column ``Agentic'' of Table~1 is now ``Automated workflow'', and the proposed row reads ``Transformer + FlashAttention + confidence-based routing''; the box ``Agentic AI Automations'' in Figure~1 is now ``Automated Workflow''; Section~3.1 no longer integrates the system ``into an agentic AI pipeline for continuous and automated operation''; and the title of the deployment example box and its final step no longer use the terms ``Agentic Pipeline'' and ``Continuous Feedback''. In the same pass we replaced claims of ``continuous'', ``real-time'' and ``near real time'' operation with scheduled, low-latency processing, because the framework was evaluated on an offline benchmark, and these replacements carry both identifiers R5C1 and R7C5.
+
+\where{R7C5}
+
+\comment{rvSeven}{R7C6}{Validation of the near-perfect binary results}
+\begin{reviewercomment}
+The near-perfect binary classification results require stronger validation against possible dataset-specific shortcuts or leakage.
+\end{reviewercomment}
+\response We addressed leakage and shortcuts separately. Leakage through repeated reviews is removed by the deduplicated Protocol B described under R7C2, and for shortcuts we trained three reference models on exactly the same partitions as the encoders, namely a majority-class predictor, a logistic regression on nine surface features (review length, word count, exclamation and question marks, capitalization, emojis and other non-ASCII characters, full stops, quotation marks and digits), and a logistic regression on TF-IDF features of word unigrams and bigrams.
+
+The results answer the reviewer's question directly, and we report them without softening. The surface-feature model reaches a Macro F1-score of only 0.5297 on the binary task, so length, punctuation, capitalization and emoji use do not explain the scores, whereas the TF-IDF model reaches 0.9673 under Protocol A and 0.9719 under Protocol B, which shows that the binary class boundary of this benchmark is largely lexical. The most heavily weighted n-grams show why, since intensified evaluative words such as \textit{fun}, \textit{amazing}, \textit{worst}, \textit{awesome}, \textit{terrible} and \textit{trash} indicate the sarcastic class, while moderate words such as \textit{good}, \textit{nice} and \textit{best} indicate the non-sarcastic class. The fine-tuned encoders add about 2.7 Macro F1 points to this baseline on the binary task and about 8.8 points on the sarcasm-type task (0.8301 against 0.7425), where contextual encoding contributes much more, and the margins are similar on the deduplicated partitions, at 2.6 and 9.7 points.
+
+We have revised the interpretation accordingly. Sentences in Key Finding~1, the Discussion and the deployment example that attributed the binary scores to contextual modelling or to attention patterns are struck through, and the Summary of Results, the Discussion, the Threats to Validity and the Conclusion now state that the near-perfect binary scores show that the class boundary of this benchmark is captured reliably, not that the models resolve sarcasm in general. Because the annotated reviews carry no application identifier, we could not run a leave-one-application-out evaluation to test whether part of the lexical signal is specific to deliberately humorous applications, and we state this as a limitation.
+
+\where{R7C6}
+
+\comment{rvEdit}{R7C7}{Grammar and readability}
+\begin{reviewercomment}
+The manuscript is generally understandable but still requires careful copy-editing. Several grammatical errors, repeated expressions, inconsistent terminology, and unclear section references remain. The use of terms should also be made consistent throughout.
+\end{reviewercomment}
+\response We completed a copy-editing pass that was read against the tables and the stored results rather than for language alone, and every resulting change is printed in green and tagged R7C7 in the tracked manuscript. To keep the comparison with the previous version easy, we limited this pass to real errors and kept the wording, the section titles and the order of the previous version wherever they were correct. Besides the changes already described, the main corrections were the following.
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+\item Grammar and repetition: ``We combining'' in RC5 and the Mistral sentence and stray fragment in the Abstract were corrected; two duplicated sentences in the Introduction and a summary sentence after the contributions that repeated the paragraph before it were deleted; the repeated oversampling and seed statements of the experimental environment are now stated once; four equations in the experimental setup that repeated the attention, classifier and loss equations of Section~3 were replaced by references to them; and double full stops in Sections~3.7 and~6 and a sentence of Section~3.6 that ended in a colon without continuation were corrected.
+\item Terminology: ``automated, confidence-aware pipeline'', ``confidence-based routing'', ``secondary processing stage'', ``eager attention'' instead of ``standard attention'', ``FlashAttention'' and ``Transformer Language Model'' are now used consistently, the two evaluation protocols are named and defined once, and the condition $f_{l^{*}} < \tau$ in Algorithm~1 is now written $c < \tau$ to match the confidence of \meq{eq:confidence}.
+\item Statements that did not match the tables: Key Finding~2 stated that Passive-Aggression is the weakest category for every architecture, whereas for TinyBERT Irony is weaker, and it attributed low precision relative to recall to Passive-Aggression and Irony, whereas the stored metrics show this pattern consistently for Self-Deprecation, and both statements were corrected; the binary confusion matrices were described as approximately balanced between false positives and false negatives, whereas they contain 5 false positives and 13 false negatives; and the per-class tables now report the support values to which their captions refer.
+\item Data description: the previous text described the sarcasm-type dataset as the sarcastic reviews of the binary dataset and the benchmark as conflict-free, and both statements were corrected in light of the audit described under R5C9.
+\item Figures: Figures~2 to~8 were regenerated from the reported values in a single style, because the titles of several figures had been cut off at the edges, and Figures~2 and~4 now show each mean with its confidence interval on an axis that does not exceed 1.0.
+\end{itemize}
+\changes Throughout the manuscript, in green with the tag R7C7.
+\where{R7C7}
+
+\subsection*{Concluding remarks of Reviewer 7}
+\begin{reviewercomment}
+I recommend rejection in the present form. A future submission would be considerably stronger after resolving the dataset and label issues, repeating the affected experiments, and providing a more rigorous and internally consistent validation of the proposed framework.
+\end{reviewercomment}
+\response We are grateful for this assessment, which identified exactly the work that remained. In this revision we resolved the label issue against the released data (R7C1), audited and deduplicated both datasets and repeated all affected encoder experiments under a deduplicated protocol (R7C2), validated the confidence-based routing (R7C3), made the FlashAttention claims consistent throughout (R7C4), removed the agentic framing (R7C5), added lexical and surface-feature baselines (R7C6), applied a correction for multiple comparisons in response to Reviewer~5 (R5C10), and corrected the language and the statements that did not match the tables (R7C7). We hope that the revised manuscript now meets the standard the reviewer described.
+
+\end{document}
